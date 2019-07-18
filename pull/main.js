@@ -51,7 +51,7 @@ if (xhr.status != 200) {
 
 var mediawikiPageId = Object.keys(mediawikiJson.query.pages)[0];
 var sitePageId = Object.keys(siteJson.query.pages)[0];
-var mediawikiText = siteJson.query.pages[sitePageId].revisions[0]['*'];
+var mediawikiText = mediawikiJson.query.pages[mediawikiPageId].revisions[0]['*'];
 var siteText = siteJson.query.pages[sitePageId].revisions[0]['*'];
 
 
@@ -61,4 +61,4 @@ document.write('<pre>'+mediawikiText+'<\/pre><BR>');
 document.write('</td><td>');
 document.write(site+'<BR>'); 
 document.write('<pre>'+siteText+'<\/pre><BR>');
-document.write('/td></tr></table>');
+document.write('</td></tr></table>');
