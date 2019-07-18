@@ -55,10 +55,10 @@ var mediawikiText = mediawikiJson.query.pages[mediawikiPageId].revisions[0]['*']
 var siteText = siteJson.query.pages[sitePageId].revisions[0]['*'];
 
 
-document.write('<table width="100%" cellspacing="0" cellpadding="5"><tr><td width="50%" >');
+document.write('<table width="100%" cellspacing="0" cellpadding="5"><tr><td width="50%" valign="top">');
 document.write('mediawiki<BR>'); 
 document.write('<pre>'+mediawikiText+'<\/pre><BR>'); 
-document.write('</td><td>');
+document.write('</td><td valign="top">');
 document.write(site+'<BR>'); 
 document.write('<pre>'+siteText+'<\/pre><BR>');
 document.write('</td></tr></table>');
