@@ -5,32 +5,46 @@ for (var i = 0; i<req.length;i++){
 
 	switch (req[i].slice(0,req[i].indexOf("="))){
 		case "id": var id = req[i].slice(req[i].indexOf("=")+1);
-			break;
+		break;
 		case "site": var site = req[i].slice(req[i].indexOf("=")+1);
-			break;
+		break;
 	}
 }
-var xhr = new XMLHttpRequest();
 
-// Синхронный запрос!!!
+var xhr = new XMLHttpRequest();// Синхронный запрос!!!
+
 xhr.open('GET', 'https://www.wikidata.org/w/api.php?action=wbgetentities&ids='+id+'&props=sitelinks&format=json&origin=*', false);
-
 xhr.send();
 if (xhr.status != 200) {
-  alert( xhr.status + ': ' + xhr.statusText ); 
+	alert( xhr.status + ': ' + xhr.statusText ); 
 } else {
-  res = JSON.parse(xhr.response); 
-  console.log(res.entities[id].sitelinks[site]);
+	res = JSON.parse(xhr.response); 
+	console.log(res.entities[id].sitelinks[site]);
 }
 
+var mediawikiTitle = encodeURIComponent(res.entities[id].sitelinks["mediawikiwiki"].title).replace('%3A',':').replace('%20',' ');//Название модуля на MediaWiki
+var mediawikiUrl = "https://www.mediawiki.org/w/api.php?format=xml&action=query&titles=" + mediawikiTitle + "&prop=revisions&rvprop=content&origin=*" ;//Ссылка на модуль MediaWiki
+var siteTitle = encodeURIComponent(res.entities[id].sitelinks[site].title).replace('%3A',':').replace('%20',' ');//Название модуля на искомом Wiki(можно использовать MediaWiki)
+var siteUrl = "https://" + site.slice(0,-4) + ".wikipedia.org/w/api.php?format=xml&action=query&titles=" + siteTitle + "&prop=revisions&rvprop=content&origin=*" ;//Ссылка на искомый модуль
 
-xhr.open('GET', 'https://ru.wikipedia.org/w/index.php?wbgetentities=%D0%9C%D0%BE%D0%B4%D1%83%D0%BB%D1%8C:TableTools&origin=*', false);
+document.write(mediawikiUrl); document.write("<BR>");
+document.write(siteUrl); document.write("<BR>");
 
+
+xhr.open('GET', mediawikiUrl, false);
 xhr.send();
 if (xhr.status != 200) {
-  alert( xhr.status + ': ' + xhr.statusText ); 
+	alert( xhr.status + ': ' + xhr.statusText ); 
 } else {
-  console.log(xhr.response);
+	document.write("<BR>"+xhr.response+"<BR>");
+}
+
+xhr.open('GET', siteUrl, false);
+xhr.send();
+if (xhr.status != 200) {
+	alert( xhr.status + ': ' + xhr.statusText ); 
+} else {
+	document.write("<BR>"+xhr.response+"<BR>");
 }
 
 
