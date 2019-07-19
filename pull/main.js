@@ -13,26 +13,27 @@ $(document).ready(function () {
 
 $.get('https://www.wikidata.org/w/api.php?action=wbgetentities&ids='+id+'&props=sitelinks&format=json&origin=*', function(res) {
 
-	var mediawikiTitle = encodeURIComponent(res.entities[id].sitelinks["mediawikiwiki"].title).replace('%3A',':').replace('%20',' ');//Название модуля на MediaWiki
-	var mediawikiUrl = "https://www.mediawiki.org/w/api.php?format=json&action=query&titles=" + mediawikiTitle + "&prop=revisions&rvprop=content&origin=*" ;//Ссылка на модуль MediaWiki
-	var siteTitle = encodeURIComponent(res.entities[id].sitelinks[site].title).replace('%3A',':').replace('%20',' ');//Название модуля на искомом Wiki(можно использовать MediaWiki)
-	var siteUrl = "https://" + site.slice(0,-4) + ".wikipedia.org/w/api.php?format=json&action=query&titles=" + siteTitle + "&prop=revisions&rvprop=content&origin=*" ;//Ссылка на искомый модуль
+	var mediawikiTitle = res.entities[id].sitelinks["mediawikiwiki"].title;//Название модуля на MediaWiki
+	var mediawikiUrl = "https://www.mediawiki.org/w/api.php?format=json&action=query&titles=" + encodeURIComponent(mediawikiTitle).replace('%3A',':').replace('%20',' ') + "&prop=revisions&rvprop=content|timestamp&origin=*" ;//Ссылка на модуль MediaWiki
+	var siteTitle = res.entities[id].sitelinks[site].title;//Название модуля на искомом Wiki(можно использовать MediaWiki)
+	var siteUrl = "https://" + site.slice(0,-4) + ".wikipedia.org/w/api.php?format=json&action=query&titles=" + encodeURIComponent(siteTitle).replace('%3A',':').replace('%20',' ') + "&prop=revisions&rvprop=content|timestamp&origin=*" ;//Ссылка на искомый модуль
 
 	$.get(mediawikiUrl, function(mediawikiJson) {
 		$.get(siteUrl, function(siteJson) {
 
 			var mediawikiPageId = Object.keys(mediawikiJson.query.pages)[0];
 			var sitePageId = Object.keys(siteJson.query.pages)[0];
+
+			var mediawikiTimestamp = mediawikiJson.query.pages[mediawikiPageId].revisions[0].timestamp;
+			var siteTimestamp = siteJson.query.pages[sitePageId].revisions[0].timestamp;
 			var mediawikiText = mediawikiJson.query.pages[mediawikiPageId].revisions[0]['*'];
 			var siteText = siteJson.query.pages[sitePageId].revisions[0]['*'];
 			
-			document.getElementById('lheader').innerHTML = site+'<br>'+siteUrl;
-			document.getElementById('rheader').innerHTML = 'mediawiki<br>'+mediawikiUrl;
-
+			document.getElementById('lheader').innerHTML = site + '<br>' + siteTitle + '<br>' + siteTimestamp; 
+			document.getElementById('rheader').innerHTML = 'mediawiki<br>' + mediawikiTitle + '<br>' + mediawikiTimestamp;
 
 			$('#mergely').mergely('lhs', siteText);
 			$('#mergely').mergely('rhs', mediawikiText);
-
 
 		}).fail(function() { alert("error"); })
 	}).fail(function() { alert("error"); })
