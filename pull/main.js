@@ -7,7 +7,9 @@ for (var i = 0; i<req.length;i++){
 	}
 }
 
-$(document).ready(function () {$('#mergely').mergely();});// initialize mergely
+$(document).ready(function () {
+	$('#mergely').mergely({license: 'lgpl-separate-notice'});// initialize mergely
+	});
 
 $.get('https://www.wikidata.org/w/api.php?action=wbgetentities&ids='+id+'&props=sitelinks&format=json&origin=*', function(res) {
 
@@ -23,11 +25,14 @@ $.get('https://www.wikidata.org/w/api.php?action=wbgetentities&ids='+id+'&props=
 			var sitePageId = Object.keys(siteJson.query.pages)[0];
 			var mediawikiText = mediawikiJson.query.pages[mediawikiPageId].revisions[0]['*'];
 			var siteText = siteJson.query.pages[sitePageId].revisions[0]['*'];
-
-			document.getElementById('header').innerHTML = '<table width="100%" cellspacing="0" cellpadding="5"><tr><td width="50%" valign="top">mediawiki<br>'+mediawikiUrl+'</td><td valign="top">'+site+'<br>'+siteUrl+'</td></tr></table>';
 			
-			$('#mergely').mergely('lhs', mediawikiText);
-			$('#mergely').mergely('rhs', siteText);
+			document.getElementById('lheader').innerHTML = site+'<br>'+siteUrl;
+			document.getElementById('rheader').innerHTML = 'mediawiki<br>'+mediawikiUrl;
+
+
+			$('#mergely').mergely('lhs', siteText);
+			$('#mergely').mergely('rhs', mediawikiText);
+
 
 		}).fail(function() { alert("error"); })
 	}).fail(function() { alert("error"); })
