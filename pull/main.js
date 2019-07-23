@@ -40,18 +40,22 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 			$.get(mediawikiDocUrl, {format:'json', origin:'*'}, function(mediawikiDocJson) {
 
 				var mediawikiDocPageId = Object.keys(mediawikiDocJson.query.pages)[0];
-				var mediawikiDocTimestamp = mediawikiDocJson.query.pages[mediawikiDocPageId].revisions[0].timestamp;
-				var mediawikiDocText = mediawikiDocJson.query.pages[mediawikiDocPageId].revisions[0]['*'];
 				
-				if (mediawikiDocText.indexOf('{{Shared Template Warning|') != -1){
-					var saveButton = document.getElementById('saveButton');
-					saveButton.addEventListener("click", function(e){
+				if (mediawikiDocPageId!="-1"){
+					var mediawikiDocTimestamp = mediawikiDocJson.query.pages[mediawikiDocPageId].revisions[0].timestamp;
+					var mediawikiDocText = mediawikiDocJson.query.pages[mediawikiDocPageId].revisions[0]['*'];
 
-						$.post("https://ru.wikipedia.org/w/api.php", 
-							{action :'edit',token : '+\\',text : mediawikiText, title:'Википедия:Песочница', origin:'*'},function(text){console.log(mediawikiText);});						
-						})
+					if (mediawikiDocText.indexOf('{{Shared Template Warning|') != -1){
+						var saveButton = document.getElementById('saveButton');
+						saveButton.addEventListener("click", function(e){
 
-				} else {alert('Module not shared') }
+							$.post("https://ru.wikipedia.org/w/api.php", 
+								{action :'edit',token : '+\\',text : mediawikiText, title:'Википедия:Песочница', origin:'*'},function(text){console.log(mediawikiText);});						
+							})
+
+					} else {alert('Module not shared') }
+				} else {alert('Doc does not exist') }
+				
 			});
 
 
