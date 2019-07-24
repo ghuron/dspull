@@ -10,7 +10,7 @@ for (var i = 0; i<req.length;i++){
 
 $(document).ready(function () {
 	$('#mergely').mergely({license: 'lgpl-separate-notice'});// initialize mergely
-	});
+});
 
 $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, props:'sitelinks', format:'json', origin:'*'}, function(res) {
 
@@ -19,9 +19,12 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 	var mediawikiDocUrl = "https://www.mediawiki.org/w/api.php?action=query&titles=" + encodeURIComponent(mediawikiTitle).replace('%3A',':').replace('%20',' ') + "/doc&prop=revisions&rvprop=content|timestamp" ;//Ссылка на модуль MediaWiki
 	var siteTitle = res.entities[id].sitelinks[site].title;//Название модуля на искомом Wiki(можно использовать MediaWiki)
 	var siteUrl = "https://" + site.slice(0,-4) + ".wikipedia.org/w/api.php?action=query&titles=" + encodeURIComponent(siteTitle).replace('%3A',':').replace('%20',' ') + "&prop=revisions&rvprop=content|timestamp" ;//Ссылка на искомый модуль
+	
+	$.get(mediawikiUrl, {format:'json', origin:'*'}, getMediawikiJson);
+	function getMediawikiJson (mediawikiJson) {
 
-	$.get(mediawikiUrl, {format:'json', origin:'*'}, function(mediawikiJson) {
-		$.get(siteUrl, {format:'json', origin:'*'}, function(siteJson) {
+		$.get(siteUrl, {format:'json', origin:'*'}, getSiteJson);
+		function getSiteJson (siteJson) {
 
 			var mediawikiPageId = Object.keys(mediawikiJson.query.pages)[0];
 			var mediawikiTimestamp = mediawikiJson.query.pages[mediawikiPageId].revisions[0].timestamp;
@@ -37,29 +40,34 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 			$('#mergely').mergely('lhs', siteText);
 			$('#mergely').mergely('rhs', mediawikiText);
 
-			$.get(mediawikiDocUrl, {format:'json', origin:'*'}, function(mediawikiDocJson) {
+			$.get(mediawikiDocUrl, {format:'json', origin:'*'}, checkDoc);
+			function checkDoc(mediawikiDocJson) {
 
 				var mediawikiDocPageId = Object.keys(mediawikiDocJson.query.pages)[0];
-				
-				if (mediawikiDocPageId!="-1"){
-					var mediawikiDocTimestamp = mediawikiDocJson.query.pages[mediawikiDocPageId].revisions[0].timestamp;
-					var mediawikiDocText = mediawikiDocJson.query.pages[mediawikiDocPageId].revisions[0]['*'];
-
-					if (mediawikiDocText.indexOf('{{Shared Template Warning|') != -1){
-						var saveButton = document.getElementById('saveButton');
-						saveButton.addEventListener("click", function(e){
-
-							$.post("https://ru.wikipedia.org/w/api.php", 
-								{action :'edit',token : '+\\',text : mediawikiText, title:'Википедия:Песочница', origin:'*'},function(text){console.log(mediawikiText);});						
-							})
-
-					} else {alert('Module not shared') }
-				} else {alert('Doc does not exist') }
-				
-			});
-
-
-		});
-	});
+				var saveButton = document.getElementById('saveButton');
+				saveButton.addEventListener("click", saveText);	
+				function saveText(){
+					if (siteText == mediawikiText){
+						alert('Modules are the same');
+					} else if (mediawikiDocPageId=="-1"){
+						alert('Doc does not exist');
+					} else {
+						var mediawikiDocTimestamp = mediawikiDocJson.query.pages[mediawikiDocPageId].revisions[0].timestamp;
+						var mediawikiDocText = mediawikiDocJson.query.pages[mediawikiDocPageId].revisions[0]['*'];
+						
+						if (mediawikiDocText.indexOf('{{Shared Template Warning|') == -1){
+							alert('Module not shared') ;
+						} else {
+						$.post("https://ru.wikipedia.org/w/api.php",{action :'edit',token : '+\\',text : mediawikiText, title:'Википедия:Песочница', origin:'*'},moduleSaved);
+						};					
+					};
+					
+					function moduleSaved (text){
+						alert('Module saved');
+					};		
+				};			
+			};
+		};
+	};
 });
 
