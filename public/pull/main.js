@@ -94,4 +94,3 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 		};
 	};
 });
-

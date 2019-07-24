@@ -1,0 +1,25 @@
+extends layout
+
+block head
+	script(ENGINE="text/javascript" src="https://code.jquery.com/jquery-1.11.2.js ")
+	script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js")
+	script(src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.32.0/codemirror.min.js")
+	link(rel="stylesheet" media="all" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.32.0/codemirror.css")
+	script(src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.32.0/addon/search/searchcursor.min.js")
+	script(src="../pull/lib/mergely.js")
+	link(rel="stylesheet" href="../pull/lib/mergely.css")
+
+block before_content
+	-var main_class = 'content-pull';
+block content
+	script(src="../pull/main.js")
+	div
+		table(width="100%" cellspacing="0" cellpadding="5")
+			tr
+				td(id="lheader" width="50%" valign="top")
+				td(id="rheader" width="40%" valign="top")
+				td(id="buttonheader" width="10%" valign="top")
+					input(type="submit"	id="saveButton"	value="Save")
+	div(style="width: 100%; height: 700px;")
+		div(class="mergely-resizer")
+			div(id="mergely")
