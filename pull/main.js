@@ -16,9 +16,9 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 
 	var mediawikiTitle = res.entities[id].sitelinks["mediawikiwiki"].title;//Название модуля на MediaWiki
 	var mediawikiUrl = "https://www.mediawiki.org/w/api.php?action=query&titles=" + encodeURIComponent(mediawikiTitle).replace('%3A',':').replace('%20',' ') + "&prop=revisions&rvprop=content|timestamp" ;//Ссылка на модуль MediaWiki
-	var mediawikiDocUrl = "https://www.mediawiki.org/w/api.php?action=query&titles=" + encodeURIComponent(mediawikiTitle).replace('%3A',':').replace('%20',' ') + "/doc&prop=revisions&rvprop=content|timestamp" ;//Ссылка на модуль MediaWiki
+	var mediawikiDocUrl = "https://www.mediawiki.org/w/api.php?action=query&titles=" + encodeURIComponent(mediawikiTitle).replace('%3A',':').replace('%20',' ') + "/doc&prop=revisions|info&inprop=protection&rvprop=content|timestamp" ;//Ссылка на модуль MediaWiki
 	var siteTitle = res.entities[id].sitelinks[site].title;//Название модуля на искомом Wiki(можно использовать MediaWiki)
-	var siteUrl = "https://" + site.slice(0,-4) + ".wikipedia.org/w/api.php?action=query&titles=" + encodeURIComponent(siteTitle).replace('%3A',':').replace('%20',' ') + "&prop=revisions&rvprop=content|timestamp" ;//Ссылка на искомый модуль
+	var siteUrl = "https://" + site.slice(0,-4) + ".wikipedia.org/w/api.php?action=query&titles=" + encodeURIComponent(siteTitle).replace('%3A',':').replace('%20',' ') + "&prop=revisions|info&inprop=protection&rvprop=content|timestamp" ;//Ссылка на искомый модуль
 	
 	$.get(mediawikiUrl, {rvlimit: 50, format:'json', origin:'*'}, getMediawikiJson);
 	function getMediawikiJson (mediawikiJson) {
@@ -38,7 +38,8 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 			var sitePageId = Object.keys(siteJson.query.pages)[0];
 			var siteTimestamp = siteJson.query.pages[sitePageId].revisions[0].timestamp;
 			var siteText = siteJson.query.pages[sitePageId].revisions[0]['*'];
-
+			var siteProtection = siteJson.query.pages[sitePageId].protection;
+	
 			var versionLag = -1;
 			for (var i = 0; i < mediawikiTextHistory.length; i++){
 				if (mediawikiTextHistory[i]==siteText){
@@ -46,7 +47,6 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 					break;
 				};
 			};
-			console.log(versionLag);
 
 			document.getElementById('lheader').innerHTML = site + '<br>' + siteTitle + '<br>' + siteTimestamp; 
 			document.getElementById('rheader').innerHTML = 'mediawiki<br>' + mediawikiTitle + '<br>' + mediawikiTimestamp;
