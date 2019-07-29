@@ -1,5 +1,10 @@
-var req = window.location.search.replace("?","").split('&')
+$.get( 'https://tools.wmflabs.org/dspull/username.php', function(res) {
+	document.getElementById('login').innerHTML = res;	
+}).fail(function() {
+	document.getElementById('login').innerHTML = "Login";	
+});
 
+var req = window.location.search.replace("?","").split('&')
 for (var i = 0; i<req.length;i++){
 	switch (req[i].slice(0,req[i].indexOf("="))){
 		case "id": var id = req[i].slice(req[i].indexOf("=")+1); break;
