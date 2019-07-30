@@ -1,3 +1,10 @@
+$.get( 'https://tools.wmflabs.org/dspull/username.php', function(res) {
+	document.getElementById('login').innerHTML = res;	
+}).fail(function() {
+	document.getElementById('login').innerHTML = "Login";	
+});
+
+
 var req = window.location.search.replace("?","").split('&')
 
 for (var i = 0; i<req.length;i++){
@@ -15,3 +22,4 @@ $.get( wikidataUrl, {format:'json', origin:'*'}, function(res) {
 		document.getElementById('list').innerHTML += '<li><a href="pull/?id='+moduleId+'&amp;site='+site+'">'+res.results.bindings[i].itemLabel.value+'</a></li>' ;
 	}
 });
+

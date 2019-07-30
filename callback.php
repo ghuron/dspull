@@ -8,6 +8,5 @@
   $_SESSION['access_key'] = $accessToken->key;
   $_SESSION['access_secret'] = $accessToken->secret;
   unset( $_SESSION['request_key'], $_SESSION['request_secret'] );
-
-  header('Location: '.'edit.php');
+	  header('Location: '.'index.html?site=ruwiki');
 ?> 
