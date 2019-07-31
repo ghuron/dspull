@@ -1,4 +1,6 @@
+var usernameLogin = '';
 $.get( 'https://tools.wmflabs.org/dspull/username.php', function(res) {
+	usernameLogin = res;
 	document.getElementById('login').innerHTML = res;	
 }).fail(function() {
 	document.getElementById('login').innerHTML = "Login";	
@@ -63,31 +65,35 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 			function checkDoc(mediawikiDocJson) {
 
 				var mediawikiDocPageId = Object.keys(mediawikiDocJson.query.pages)[0];
-			
-				if (versionLag==-1){
-				document.getElementById('buttonheader').innerHTML += '<br>Cant find module in the history';	
-				} else if (versionLag==0){
+				
+				if (versionLag==0){
 				document.getElementById('buttonheader').innerHTML += '<br>Modules are the same';
-				} else if (mediawikiDocPageId=="-1"){
-					document.getElementById('buttonheader').innerHTML += '<br>Doc does not exist';
 				} else {
-					var mediawikiDocTimestamp = mediawikiDocJson.query.pages[mediawikiDocPageId].revisions[0].timestamp;
-					var mediawikiDocText = mediawikiDocJson.query.pages[mediawikiDocPageId].revisions[0]['*'];
-					
-					if (mediawikiDocText.indexOf('{{Shared Template Warning|') == -1){
-						document.getElementById('buttonheader').innerHTML += '<br>Module not shared' ;
+					document.getElementById("saveButton").disabled = false;
+					if (versionLag==-1){
+					document.getElementById('buttonheader').innerHTML += '<br>Cant find module in the history';	
+					} else if (mediawikiDocPageId=="-1"){
+						document.getElementById('buttonheader').innerHTML += '<br>Doc does not exist';
 					} else {
-						document.getElementById('buttonheader').innerHTML += '<br>Upgrade '+ versionLag +' versions';
-						document.getElementById("saveButton").disabled = false;	
-					};					
+						var mediawikiDocTimestamp = mediawikiDocJson.query.pages[mediawikiDocPageId].revisions[0].timestamp;
+						var mediawikiDocText = mediawikiDocJson.query.pages[mediawikiDocPageId].revisions[0]['*'];
+						
+						if (mediawikiDocText.indexOf('{{Shared Template Warning|') == -1){
+							document.getElementById('buttonheader').innerHTML += '<br>Module not shared' ;
+						} else {
+							document.getElementById('buttonheader').innerHTML += '<br>Upgrade '+ versionLag +' versions';
+						};					
+					};
 				};
-
 
 				var saveButton = document.getElementById('saveButton');
 				saveButton.addEventListener("click", saveText);	
-				function saveText(){+
-					$.post("https://ru.wikipedia.org/w/api.php",{action :'edit',token : '+\\',text : mediawikiText, title:'Википедия:Песочница', origin:'*'},moduleSaved);
-
+				function saveText(){
+					if (usernameLogin == ''){
+						alert('Please login');
+					}else{
+						$.post("https://tools.wmflabs.org/dspull/edit.php",{text : mediawikiText},moduleSaved);	
+					}
 					function moduleSaved (text){
 						alert('Module saved');
 					};		

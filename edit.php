@@ -18,10 +18,10 @@
  
   $apiParams = [
 	'action' => 'edit',
-	'title' => 'User:' . $ident->username,
-	'section' => 'new',
-	'summary' => 'Hello World',
-	'text' => 'I am learning to use the <code>mediawiki/oauthclient</code> library.',
+	'title' => 'User:' . $ident->username . '/sandbox',
+	'section' => '0',
+	'summary' => 'DSPool',
+	'text' => $_POST['text'],
 	'token' => $editToken,
 	'format' => 'json',
   ];
@@ -32,7 +32,7 @@
 	true,
 	$apiParams
   ) );
-  //echo "\n== You made an edit ==\n\n";
+
   print_r( $editResult );
 
 ?> 
