@@ -4,23 +4,21 @@
   use MediaWiki\OAuthClient\ClientConfig;
   use MediaWiki\OAuthClient\Consumer;
   use MediaWiki\OAuthClient\Token;
-  $apiUrl = 'https://en.wikipedia.org/w/api.php';
+  $apiUrl = 'https://' . $_POST['site'] . '.wikipedia.org/w/api.php';
   session_start();
   $accessToken = new Token( $_SESSION['access_key'], $_SESSION['access_secret'] );
   $editToken = json_decode( $client->makeOAuthCall(
   	$accessToken,
-	"https://en.wikipedia.org/w/api.php?action=query&meta=tokens&format=json"
+	$apiUrl . "?action=query&meta=tokens&format=json"
   ))->query->tokens->csrftoken;
 
   $ident = $client->identify( $accessToken );
-  echo 'csrf edit token: '.$editToken.'<br>'; 
-  echo "You are authenticated as $ident->username.\n\n<br>";
- 
+
   $apiParams = [
 	'action' => 'edit',
-	'title' => 'User:' . $ident->username . '/sandbox',
+	'title' => $_POST['title'],
 	'section' => '0',
-	'summary' => 'DSPool',
+	'summary' => $_POST['summary'],
 	'text' => $_POST['text'],
 	'token' => $editToken,
 	'format' => 'json',
