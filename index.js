@@ -7,26 +7,74 @@ $.get( 'https://tools.wmflabs.org/dspull/username.php', function(res) {
 
 var req = window.location.search.replace("?","").split('&')
 
-for (var i = 0; i<req.length;i++){
-	switch (req[i].slice(0,req[i].indexOf("="))){
-		case "site": var site = req[i].slice(req[i].indexOf("=")+1); break;
+for (let i of req){
+	switch (i.slice(0, i.indexOf("="))){
+		case "site": var site = i.slice(i.indexOf("=")+1); break;
 	};
 };
 window.onload = function(){  
-	if(typeof(site) != "undefined" && site !== null) {
-		var wikidataUrl = 'https://query.wikidata.org/sparql?query=SELECT%20%3Fitem%20%3FitemLabel%20%7B%0A%20%20%3Fitem%20wdt%3AP31%20wd%3AQ63090714.%0A%20%20%5B%5D%20schema%3Aabout%20%3Fitem%3B%20schema%3AisPartOf%20%3Chttps%3A%2F%2F'+ site.slice(0,-4) + '.wikipedia.org%2F%3E.%0A%20%20%5B%5D%20schema%3Aabout%20%3Fitem%3B%20schema%3AisPartOf%20%3Chttps%3A%2F%2Fwww.mediawiki.org%2F%3E%0A%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22ru%22%20%7D%0A%7D%0A'
+	listText = "";
+
+	if(!!site) {
+		var siteShort = site.slice(0,-4);//enwiki->en
+		var wikidataRequest = 'PREFIX mw: <http://tools.wmflabs.org/mw2sparql/ontology#>\
+		select ?item (SUBSTR(STR(?source), 32) AS ?itemLabel) ?itemTarget ?base (SUBSTR(STR(?parent), 32) AS ?baseLabel) ?baseTarget {\
+			hint:Query hint:optimizer "None" .\
+			?item wdt:P31 wd:Q63090714.\
+			OPTIONAL { ?itemTarget schema:about ?item; schema:isPartOf <https://' + siteShort + '.wikipedia.org/> }\
+			?source schema:about ?item; schema:isPartOf <https://www.mediawiki.org/>\
+			SERVICE <http://tools.wmflabs.org/mw2sparql/sparql> {\
+				?source mw:includesPage ?parent\
+			}\
+			OPTIONAL { ?parent schema:about ?base . ?baseTarget schema:about ?base; schema:isPartOf <https://' + siteShort + '.wikipedia.org/> }\
+		} ORDER BY ?itemLabel ?baseLabel';
+
+		var wikidataUrl = 'https://query.wikidata.org/sparql?query=' + encodeURIComponent(wikidataRequest);
+		console.log(wikidataUrl);
 		$.get( wikidataUrl, {format:'json', origin:'*'}, function(res) {
-
-			for (var i = 0; i < res.results.bindings.length; i++) {
+			var itemLabel = '';
+			for (let i = 0; i < res.results.bindings.length; i++) {
 				
-				var moduleId = res.results.bindings[i].item.value.slice(res.results.bindings[i].item.value.lastIndexOf('Q'))	
+				var moduleItemId = res.results.bindings[i].item.value.slice(res.results.bindings[i].item.value.lastIndexOf('Q'));					
+				var baseLabel = res.results.bindings[i].baseLabel.value;
+				if (res.results.bindings[i].itemLabel.value != itemLabel){
+					if (i != 0 ){listText += '</ul>'};
+					itemLabel = res.results.bindings[i].itemLabel.value;
+					if (!!res.results.bindings[i].itemTarget){
+						listText += '<li><a href="pull/?id='+moduleItemId+'&amp;site='+site+'">'+ itemLabel +'</a></li><ul>';	
+					}else{
+						listText += '<li><a>'+ itemLabel +'</a></li><ul>';	
+					}
+				}
 
-				document.getElementById('list').innerHTML += '<li><a href="pull/?id='+moduleId+'&amp;site='+site+'">'+res.results.bindings[i].itemLabel.value+'</a></li>' ;
+				if (itemLabel != baseLabel){
+					if (!!res.results.bindings[i].baseTarget){
+						var moduleBaseId = res.results.bindings[i].base.value.slice(res.results.bindings[i].base.value.lastIndexOf('Q'));	
+						listText += '<li><a href="pull/?id='+moduleBaseId+'&amp;site='+site+'">'+ baseLabel +'</a></li>' ;	
+					}else{
+						listText += '<li><a>'+ baseLabel +'</a></li>' ;	
+					}
+				}
+
 			}
+			listText += '</ul>';
+			document.getElementById('list').innerHTML += listText;	
 		});    
 	}else{
-		document.getElementById('list').innerHTML += '<li><a href="?site=ruwiki">ruwiki</a></li>';
-		document.getElementById('list').innerHTML += '<li><a href="?site=enwiki">enwiki</a></li>';
+
+		document.getElementById('list').innerHTML += '<p>Enter wiki: <input id = "inputWiki" placeholder="e.g. enwiki" value ="ruwiki"><input type="submit" id = "openButton" value="Open"/></p>';
+		$('#inputWiki').keyup(function(){
+			var keycode = (event.keyCode ? event.keyCode : event.which);
+			if(keycode == '13' && /[a-z]{1,10}(wiki)/.test($(this).val())){
+				document.location.href = "?site=" + $(this).val();
+			}
+		});
+		$( "#openButton" ).click(function(){ 
+			if(/[a-z]{1,10}(wiki)/.test($('#inputWiki').val())){
+	    		document.location.href = "?site=" +$('#inputWiki').val();
+	    	};
+		});
+
+		};
 	};
-};
 

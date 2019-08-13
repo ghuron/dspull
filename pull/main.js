@@ -1,23 +1,24 @@
 var usernameLogin = '';
 $.get( 'https://tools.wmflabs.org/dspull/username.php', function(res) {//Login check
 	usernameLogin = res;
-	document.getElementById('login').innerHTML = res;	
+	document.getElementById('login').innerHTML = res;
 }).fail(function() {
-	document.getElementById('login').innerHTML = "Login";	
+	document.getElementById('login').innerHTML = "Login";
 });
 
 var req = window.location.search.replace("?","").split('&')//Parsing of the address bar
-for (var i = 0; i<req.length;i++){
-	switch (req[i].slice(0,req[i].indexOf("="))){
-		case "id": var id = req[i].slice(req[i].indexOf("=")+1); break;
-		case "site": var site = req[i].slice(req[i].indexOf("=")+1); break;
+for (let i of req){
+	switch (i.slice(0, i.indexOf("="))){
+		case "id": var id = i.slice(i.indexOf("=")+1); break;
+		case "site": var site = i.slice(i.indexOf("=")+1); break;
 	}
 }
 var siteShort = site.slice(0,-4);//enwiki->en
- 
+
 $(document).ready(function () {
 	$('#mergely').mergely({license: 'lgpl-separate-notice'});// initialize mergely
-	document.getElementById("saveButton").disabled = true;	
+	document.getElementById("saveButton").disabled = true;
+	document.getElementById("warningButton").disabled = true;
 });
 
 $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, props:'sitelinks', format:'json', origin:'*'}, function(res) {
@@ -32,11 +33,11 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 	function getMediawikiJson (mediawikiJson) {
 		
 		var mediawikiPageId = Object.keys(mediawikiJson.query.pages)[0];
-		var mediawikiTimestamp = mediawikiJson.query.pages[mediawikiPageId].revisions[0].timestamp;
+		var mediawikiTimestamp = mediawikiJson.query.pages[mediawikiPageId].revisions[0].timestamp.replace('T',' ').replace('Z',' ');
 		var mediawikiText = mediawikiJson.query.pages[mediawikiPageId].revisions[0]['*'];
 		var mediawikiTextHistory = [];
-		for (var i = 0; i < mediawikiJson.query.pages[mediawikiPageId].revisions.length; i++){
-			mediawikiTextHistory.push(mediawikiJson.query.pages[mediawikiPageId].revisions[i]['*']);
+		for (let i of mediawikiJson.query.pages[mediawikiPageId].revisions){
+			mediawikiTextHistory.push(i['*']);
 		};
 
 		$.get(siteUrl, {format:'json', origin:'*'}, getSiteJson);
@@ -44,28 +45,30 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 
 
 			var sitePageId = Object.keys(siteJson.query.pages)[0];
-			var siteTimestamp = siteJson.query.pages[sitePageId].revisions[0].timestamp;
+			var siteTimestamp = siteJson.query.pages[sitePageId].revisions[0].timestamp.replace('T',' ').replace('Z',' ');
 			var siteText = siteJson.query.pages[sitePageId].revisions[0]['*'];
 			var siteProtection = siteJson.query.pages[sitePageId].protection;
 
 			var versionLag = -1;
-			for (var i = 0; i < mediawikiTextHistory.length; i++){
+			for (let i = 0; i < mediawikiTextHistory.length; i++){
 				if (mediawikiTextHistory[i]==siteText){
 					versionLag = i;
 					break;
 				};
 			};
 
-			if (versionLag != -1){
+			if (versionLag != -1){ 
 				var summaryText = "Copying "+versionLag+" changes by " + mediawikiJson.query.pages[mediawikiPageId].revisions[0].user;
-				for (var i = 1; i < versionLag; i++){summaryText += ", " + mediawikiJson.query.pages[mediawikiPageId].revisions[i].user};
+				for (let i = 1; i < versionLag; i++){summaryText += ", " + mediawikiJson.query.pages[mediawikiPageId].revisions[i].user};
 					summaryText += " from [[:mw:" + mediawikiTitle + "]]";
 			}else{
 				var summaryText = "Copying from [[:mw:" + mediawikiTitle + "]]";
 			}
 
-			document.getElementById('lheader').innerHTML = site + '<br>' + siteTitle + '<br>' + siteTimestamp; 
-			document.getElementById('rheader').innerHTML = 'mediawiki<br>' + mediawikiTitle + '<br>' + mediawikiTimestamp;
+			document.title += ': ' + mediawikiTitle;
+			document.getElementById('moduleName').innerHTML = mediawikiTitle;
+			document.getElementById('lheader').innerHTML = '<a href="https://' + siteShort + '.wikipedia.org/wiki/' + siteTitle + '" target="_blank">'+ site +'</a>  ' + siteTimestamp; 
+			document.getElementById('rheader').innerHTML = '<a href="https://mediawiki.org/wiki/' + mediawikiTitle + '" target="_blank" target="_blank">mediawiki</a>  	' +  mediawikiTimestamp;
 
 			$('#mergely').mergely('lhs', siteText);
 			$('#mergely').mergely('rhs', mediawikiText);
@@ -74,21 +77,23 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 			function checkDoc(mediawikiDocJson) {
 
 				var mediawikiDocPageId = Object.keys(mediawikiDocJson.query.pages)[0];
+				var warningText = '';
+
 				if (versionLag==0){
 					document.getElementById('saveButton').value = 'Nothing to save';
 
 				} else {
 					document.getElementById("saveButton").disabled = false;
 					if (versionLag==-1){
-						document.getElementById('buttonheader').innerHTML += '<br>Cant find module in the history';	
+						warningText = 'Cant find module in the history';	
 					} else if (mediawikiDocPageId=="-1"){
-						document.getElementById('buttonheader').innerHTML += '<br>Doc does not exist';
+						warningText = 'Doc does not exist';
 					} else {
 						var mediawikiDocTimestamp = mediawikiDocJson.query.pages[mediawikiDocPageId].revisions[0].timestamp;
 						var mediawikiDocText = mediawikiDocJson.query.pages[mediawikiDocPageId].revisions[0]['*'];
 						
 						if (mediawikiDocText.indexOf('{{Shared Template Warning|') == -1){
-							document.getElementById('buttonheader').innerHTML += '<br>Module not shared';
+							warningText = 'Module not shared';
 						} else {
 							document.getElementById('buttonheader').innerHTML += '<br>Upgrade '+ versionLag +' versions';
 						};					
@@ -96,6 +101,14 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 				};
 
 				var saveButton = document.getElementById('saveButton');
+				var warningButton = document.getElementById('warningButton');
+
+				if (warningText != ''){warningButton.disabled = false};
+
+				warningButton.addEventListener("click", showWarning);	
+				function showWarning(){
+					alert(warningText);
+				};
 
 				saveButton.addEventListener("click", saveText);	
 				function saveText(){
