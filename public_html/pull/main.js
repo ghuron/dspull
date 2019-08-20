@@ -1,4 +1,5 @@
 var usernameLogin = '';
+
 $.get( 'https://tools.wmflabs.org/dspull/username.php', function(res) {//Login check
 	usernameLogin = res;
 	document.getElementById('login').innerHTML = res;
@@ -18,8 +19,8 @@ var siteShort = site.slice(0,-4);//enwiki->en
 $(document).ready(function () {
 	$('#mergely').mergely({license: 'lgpl-separate-notice'});// initialize mergely
 	document.getElementById("saveButton").disabled = true;
-	document.getElementById("warningButton").disabled = true;
 });
+
 
 $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, props:'sitelinks', format:'json', origin:'*'}, function(res) {
 
@@ -50,7 +51,7 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 			var siteProtection = siteJson.query.pages[sitePageId].protection;
 
 			var versionLag = -1;
-			for (let i = 0; i < mediawikiTextHistory.length; i++){
+			for (let i in mediawikiTextHistory){
 				if (mediawikiTextHistory[i]==siteText){
 					versionLag = i;
 					break;
@@ -66,6 +67,7 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 			}
 
 			document.title += ': ' + mediawikiTitle;
+			document.getElementById('headerModuleName').innerHTML = mediawikiTitle;
 			document.getElementById('moduleName').innerHTML = mediawikiTitle;
 			document.getElementById('lheader').innerHTML = '<a href="https://' + siteShort + '.wikipedia.org/wiki/' + siteTitle + '" target="_blank">'+ site +'</a>  ' + siteTimestamp; 
 			document.getElementById('rheader').innerHTML = '<a href="https://mediawiki.org/wiki/' + mediawikiTitle + '" target="_blank" target="_blank">mediawiki</a>  	' +  mediawikiTimestamp;
@@ -100,15 +102,9 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 					};
 				};
 
+				document.getElementById('moduleIssues').innerHTML = warningText;
+
 				var saveButton = document.getElementById('saveButton');
-				var warningButton = document.getElementById('warningButton');
-
-				if (warningText != ''){warningButton.disabled = false};
-
-				warningButton.addEventListener("click", showWarning);	
-				function showWarning(){
-					alert(warningText);
-				};
 
 				saveButton.addEventListener("click", saveText);	
 				function saveText(){
