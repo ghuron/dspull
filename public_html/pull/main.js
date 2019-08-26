@@ -22,13 +22,14 @@ $(document).ready(function () {
 });
 
 
-$.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, props:'sitelinks', format:'json', origin:'*'}, function(res) {
+$.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, props:'sitelinks', format:'json', origin:'*'}, getWikidataJson);
+function getWikidataJson (res) {
 
 	var mediawikiTitle = res.entities[id].sitelinks["mediawikiwiki"].title;//Название модуля на MediaWiki
-	var mediawikiUrl = "https://www.mediawiki.org/w/api.php?action=query&titles=" + encodeURIComponent(mediawikiTitle).replace('%3A',':').replace('%20',' ') + "&prop=revisions&rvprop=content|timestamp|user|comment" ;//Ссылка на модуль MediaWiki
-	var mediawikiDocUrl = "https://www.mediawiki.org/w/api.php?action=query&titles=" + encodeURIComponent(mediawikiTitle).replace('%3A',':').replace('%20',' ') + "/doc&prop=revisions|info&inprop=protection&rvprop=content|timestamp" ;//Ссылка на документацию MediaWiki
+	var mediawikiUrl = "https://www.mediawiki.org/w/api.php?action=query&titles=" + encodeURIComponent(mediawikiTitle) + "&prop=revisions&rvprop=content|timestamp|user|comment" ;//Ссылка на модуль MediaWiki
+	var mediawikiDocUrl = "https://www.mediawiki.org/w/api.php?action=query&titles=" + encodeURIComponent(mediawikiTitle) + "/doc&prop=revisions|info&inprop=protection&rvprop=content|timestamp" ;//Ссылка на документацию MediaWiki
 	var siteTitle = res.entities[id].sitelinks[site].title;//Название модуля на искомом Wiki(можно использовать MediaWiki)
-	var siteUrl = "https://" + siteShort + ".wikipedia.org/w/api.php?action=query&titles=" + encodeURIComponent(siteTitle).replace('%3A',':').replace('%20',' ') + "&prop=revisions|info&inprop=protection&rvprop=content|timestamp" ;//Ссылка на искомый модуль
+	var siteUrl = "https://" + siteShort + ".wikipedia.org/w/api.php?action=query&titles=" + encodeURIComponent(siteTitle) + "&prop=revisions|info&inprop=protection&rvprop=content|timestamp" ;//Ссылка на искомый модуль
 	
 	$.get(mediawikiUrl, {rvlimit: 50, format:'json', origin:'*'}, getMediawikiJson);
 	function getMediawikiJson (mediawikiJson) {
@@ -43,7 +44,6 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 
 		$.get(siteUrl, {format:'json', origin:'*'}, getSiteJson);
 		function getSiteJson (siteJson) {
-
 
 			var sitePageId = Object.keys(siteJson.query.pages)[0];
 			var siteTimestamp = siteJson.query.pages[sitePageId].revisions[0].timestamp.replace('T',' ').replace('Z',' ');
@@ -64,7 +64,7 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 					summaryText += " from [[:mw:" + mediawikiTitle + "]]";
 			}else{
 				var summaryText = "Copying from [[:mw:" + mediawikiTitle + "]]";
-			}
+			};
 
 			document.title += ': ' + mediawikiTitle;
 			document.getElementById('headerModuleName').innerHTML = mediawikiTitle;
@@ -75,7 +75,38 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 			$('#mergely').mergely('lhs', siteText);
 			$('#mergely').mergely('rhs', mediawikiText);
 
-			$.get(mediawikiDocUrl, {format:'json', origin:'*'}, checkDoc);
+			var depSet = parseModule(mediawikiText);
+			var depEq = true;
+			var depEqList = {};
+			if (depSet.size != 0){
+				var mediawikiDepUrl = 'https://www.mediawiki.org/w/api.php?action=query&titles=' + setToText(depSet) + '&prop=revisions&rvprop=content';
+				var siteDepUrl = 'https://' + siteShort + '.wikipedia.org/w/api.php?action=query&titles=' + setToText(depSet) + '&prop=revisions&rvprop=content';
+				var mediawikiDepReq = $.get(mediawikiDepUrl, {format:'json', origin:'*'});
+				var siteDepReq = $.get(siteDepUrl, {format:'json', origin:'*'});
+				
+				var depReqDone = $.when(mediawikiDepReq, siteDepReq).then(compareDep);
+				function compareDep(mediawikiDep,siteDep) {
+					var mediawikiDepPageId = Object.keys(mediawikiDep[0].query.pages);
+					var siteDepPageId = Object.keys(siteDep[0].query.pages);
+					var moduleDep = {};
+					console.log(mediawikiDepPageId, siteDepPageId)
+					for (let i in mediawikiDepPageId){
+						if (mediawikiDepPageId[i]>0){
+							let mediawikiDepText = mediawikiDep[0].query.pages[mediawikiDepPageId[i]].revisions[0]['*'];
+							let siteDepText = siteDep[0].query.pages[siteDepPageId[i]].revisions[0]['*'];
+							if (mediawikiDepText != siteDepText){depEq = false};
+							depEqList[siteDep[0].query.pages[siteDepPageId[i]].title] = (mediawikiDepText == siteDepText);
+						}
+					};
+				};
+				var x1 = $.when(depReqDone).then(function (isDepEq) {
+
+					$.get(mediawikiDocUrl, {format:'json', origin:'*'}, checkDoc);
+				});
+			}else{
+				$.get(mediawikiDocUrl, {format:'json', origin:'*'}, checkDoc);
+			};
+
 			function checkDoc(mediawikiDocJson) {
 
 				var mediawikiDocPageId = Object.keys(mediawikiDocJson.query.pages)[0];
@@ -102,6 +133,12 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 					};
 				};
 
+				if (!depEq){
+					document.getElementById('saveButton').value = 'Dependencies error'
+					document.getElementById("saveButton").disabled = true;
+					warningText += '<br>' + depToText(depEqList);
+				};
+				
 				document.getElementById('moduleIssues').innerHTML = warningText;
 
 				var saveButton = document.getElementById('saveButton');
@@ -123,5 +160,41 @@ $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, pr
 			};
 		};
 	};
-});
+};
 
+function parseModule(text){
+	let result = Array.from(text.matchAll(/require\('(.+?)'\)/g));
+	let moduleSet = new Set();
+	for (let i of result){
+		if (!i[1].includes('libraryUtil')){
+			moduleSet.add(i[1])
+		};
+	};
+	return moduleSet;
+};
+
+function setToText(set){
+	var text = '';
+	for (let i of set){
+		if (text!=''){text += '|'};
+		text += encodeURIComponent(i);
+	};
+	return text;
+};
+
+function depToText(dep){
+	var text = '';
+	var unequalDep = 0;
+	for (let i in dep){
+		if (!dep[i]){unequalDep++;
+			if (text != ''){text+=', '};
+			text += i;
+		};
+	};
+	if (unequalDep == 1){
+		text = 'You have ' + unequalDep + ' unequal dependency: ' + text;
+	}else if(unequalDep > 1){
+		text = 'You have ' + unequalDep + ' unequal dependencies: ' + text;
+	}
+	return text;
+};
