@@ -52,7 +52,6 @@ function showModules(){
 					tree[itemLabel].base[baseLabel] = getBase(bindings,itemLabel,baseLabel);
 				};
 			};
-			console.log(tree);
 
 			document.getElementById('list').innerHTML += getListText(tree);
 
@@ -134,11 +133,13 @@ function getItemLabelList(tree){
 };
 
 function getBase(bindings, itemLabel, baseLabel){
+
 	for (let i in bindings) {
 		if (bindings[i].itemLabel.value.replace(/_/g, ' ')==itemLabel && bindings[i].baseLabel.value.replace(/_/g, ' ')==baseLabel){
 			return {'url':bindings[i].base.value};	
 		};
 	};
+	return {};
 };
 
 function getListText(tree){
