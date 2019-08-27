@@ -22,6 +22,7 @@ $(document).ready(function () {
 });
 
 
+
 $.get('https://www.wikidata.org/w/api.php?', {action:'wbgetentities', ids:id, props:'sitelinks', format:'json', origin:'*'}, getWikidataJson);
 function getWikidataJson (res) {
 
@@ -74,39 +75,54 @@ function getWikidataJson (res) {
 
 			$('#mergely').mergely('lhs', siteText);
 			$('#mergely').mergely('rhs', mediawikiText);
-
-			var depSet = parseModule(mediawikiText);
+			
 			var depEq = true;
 			var depEqList = {};
-			if (depSet.size != 0){
-				var mediawikiDepUrl = 'https://www.mediawiki.org/w/api.php?action=query&titles=' + setToText(depSet) + '&prop=revisions&rvprop=content';
-				var siteDepUrl = 'https://' + siteShort + '.wikipedia.org/w/api.php?action=query&titles=' + setToText(depSet) + '&prop=revisions&rvprop=content';
-				var mediawikiDepReq = $.get(mediawikiDepUrl, {format:'json', origin:'*'});
-				var siteDepReq = $.get(siteDepUrl, {format:'json', origin:'*'});
-				
-				var depReqDone = $.when(mediawikiDepReq, siteDepReq).then(compareDep);
-				function compareDep(mediawikiDep,siteDep) {
-					var mediawikiDepPageId = Object.keys(mediawikiDep[0].query.pages);
-					var siteDepPageId = Object.keys(siteDep[0].query.pages);
-					var moduleDep = {};
-					console.log(mediawikiDepPageId, siteDepPageId)
-					for (let i in mediawikiDepPageId){
-						if (mediawikiDepPageId[i]>0){
-							let mediawikiDepText = mediawikiDep[0].query.pages[mediawikiDepPageId[i]].revisions[0]['*'];
-							let siteDepText = siteDep[0].query.pages[siteDepPageId[i]].revisions[0]['*'];
-							if (mediawikiDepText != siteDepText){depEq = false};
-							depEqList[siteDep[0].query.pages[siteDepPageId[i]].title] = (mediawikiDepText == siteDepText);
-						}
-					};
+			if (mediawikiTitle.includes('Template')){
+				var wikidataRequest = 'PREFIX mw: <http://tools.wmflabs.org/mw2sparql/ontology#>\
+				select ?base ?baseLabel ?baseTarget {\
+				  hint:Query hint:optimizer "None" .\
+				  ?source schema:about wd:' + id + '; schema:isPartOf <https://www.mediawiki.org/>\
+				  SERVICE <http://tools.wmflabs.org/mw2sparql/sparql> {\
+				    ?source mw:includesPage ?parent .\
+				  }\
+				  ?parent schema:about ?base\
+				  OPTIONAL { ?baseTarget schema:about ?base; schema:isPartOf <https://' + siteShort + '.wikipedia.org/> }\
+				  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }\
+				}';
+
+				var wikidataUrl = 'https://query.wikidata.org/sparql?query=' + encodeURIComponent(wikidataRequest);
+				$.get( wikidataUrl, {format:'json', origin:'*'}, getWikidataJson);
+				function getWikidataJson(wikidataJson){
+					var depBindings = wikidataJson.results.bindings;
+					var depSet = bindingsToSet(depBindings);
+					var mediawikiDepUrl = 'https://www.mediawiki.org/w/api.php?action=query&titles=' + setToText(depSet) + '&prop=revisions&rvprop=content';
+					var siteDepUrl = 'https://' + siteShort + '.wikipedia.org/w/api.php?action=query&titles=' + setToText(depSet) + '&prop=revisions&rvprop=content';
+					var mediawikiDepReq = $.get(mediawikiDepUrl, {format:'json', origin:'*'});
+					var siteDepReq = $.get(siteDepUrl, {format:'json', origin:'*'});
+					
+					var depReqDone = $.when(mediawikiDepReq, siteDepReq).then(function (mediawikiDep,siteDep) {
+						[depEq,depEqList] = checkDep(mediawikiDep,siteDep);
+						$.get(mediawikiDocUrl, {format:'json', origin:'*'}, checkDoc);
+					});					
 				};
-				var x1 = $.when(depReqDone).then(function (isDepEq) {
 
-					$.get(mediawikiDocUrl, {format:'json', origin:'*'}, checkDoc);
-				});
 			}else{
-				$.get(mediawikiDocUrl, {format:'json', origin:'*'}, checkDoc);
+				var depSet = parseModule(mediawikiText);
+				if (depSet.size != 0){
+					var mediawikiDepUrl = 'https://www.mediawiki.org/w/api.php?action=query&titles=' + setToText(depSet) + '&prop=revisions&rvprop=content';
+					var siteDepUrl = 'https://' + siteShort + '.wikipedia.org/w/api.php?action=query&titles=' + setToText(depSet) + '&prop=revisions&rvprop=content';
+					var mediawikiDepReq = $.get(mediawikiDepUrl, {format:'json', origin:'*'});
+					var siteDepReq = $.get(siteDepUrl, {format:'json', origin:'*'});
+					
+					var depReqDone = $.when(mediawikiDepReq, siteDepReq).then(function (mediawikiDep,siteDep) {
+						[depEq,depEqList] = checkDep(mediawikiDep,siteDep);
+						$.get(mediawikiDocUrl, {format:'json', origin:'*'}, checkDoc);
+					});		
+				}else{
+					$.get(mediawikiDocUrl, {format:'json', origin:'*'}, checkDoc);
+				};
 			};
-
 			function checkDoc(mediawikiDocJson) {
 
 				var mediawikiDocPageId = Object.keys(mediawikiDocJson.query.pages)[0];
@@ -114,7 +130,7 @@ function getWikidataJson (res) {
 
 				if (versionLag==0){
 					document.getElementById('saveButton').value = 'Nothing to save';
-
+					warningText += 'Nothing to save';
 				} else {
 					document.getElementById("saveButton").disabled = false;
 					if (versionLag==-1){
@@ -132,7 +148,6 @@ function getWikidataJson (res) {
 						};					
 					};
 				};
-
 				if (!depEq){
 					document.getElementById('saveButton').value = 'Dependencies error'
 					document.getElementById("saveButton").disabled = true;
@@ -160,6 +175,16 @@ function getWikidataJson (res) {
 			};
 		};
 	};
+};
+
+function bindingsToSet(bindings){
+	let set = new Set();
+	for (let i of bindings){
+		if (typeof i.baseTarget !== 'undefined'){
+			set.add(i.baseLabel.value);
+		};
+	};
+	return set;
 };
 
 function parseModule(text){
@@ -197,4 +222,30 @@ function depToText(dep){
 		text = 'You have ' + unequalDep + ' unequal dependencies: ' + text;
 	}
 	return text;
+};
+
+function checkDep(mediawikiDep,siteDep){
+	var dep = true;
+	var depList = {};
+	var mediawikiDep = mediawikiDep[0].query.pages;
+	var siteDep = siteDep[0].query.pages;
+	for (let i in siteDep){
+		siteDep[i].title = siteDep[i].title.slice(siteDep[i].title.lastIndexOf(':'));
+		if (siteDep[i].ns == 10){
+			siteDep[i].title = 'Template' + siteDep[i].title;
+		}else{
+			siteDep[i].title = 'Module' + siteDep[i].title;
+		};
+	};
+	for (let i in mediawikiDep){
+		for (let j in siteDep){
+			if(mediawikiDep[i].title == siteDep[j].title){
+				let mediawikiDepText = mediawikiDep[i].revisions[0]['*'];
+				let siteDepText = siteDep[j].revisions[0]['*'];
+				if (mediawikiDepText != siteDepText){dep = false};
+				depList[mediawikiDep[i].title] = (mediawikiDepText == siteDepText);
+			};
+		};
+	};
+	return [dep,depList];
 };
