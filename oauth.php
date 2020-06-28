@@ -5,6 +5,6 @@
   use MediaWiki\OAuthClient\Client;
 
   $conf = new ClientConfig( 'https://en.wikipedia.org/w/index.php?title=Special:OAuth' );
-  $conf->setConsumer( new Consumer( '92e5598f6608d95b2eb4645420b747b5', require_once __DIR__ . '/.secret.php' ) );
+  $conf->setConsumer( new Consumer( 'abef0f582ef20b645630e76cfcfef67b', require_once __DIR__ . '/.secret.php' ) );
   return new Client( $conf );
 ?>
