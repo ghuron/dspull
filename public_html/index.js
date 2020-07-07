@@ -14,7 +14,7 @@ window.onload = function(){
 };
 
 function checkLogin(){
-	$.get( 'https://tools.wmflabs.org/dspull/username.php', function(res) {
+	$.get( 'https://dspull.toolforge.org/username.php', function(res) {
 		document.getElementById('login').innerHTML = res;	
 	}).fail(function() {
 		document.getElementById('login').innerHTML = "Login";	
