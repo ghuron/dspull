@@ -1,6 +1,6 @@
 var usernameLogin = '';
 
-$.get( 'https://tools.wmflabs.org/dspull/username.php', function(res) {//Login check
+$.get( 'https://dspull.toolforge.org/username.php', function(res) {//Login check
 	usernameLogin = res;
 	document.getElementById('login').innerHTML = res;
 }).fail(function() {
@@ -163,7 +163,7 @@ function getWikidataJson (res) {
 					if (usernameLogin == ''){
 						alert('Please login');
 					}else{
-						$.post("https://tools.wmflabs.org/dspull/edit.php",{"site" : siteShort, "title" : siteTitle , "text" : mediawikiText, "summary": summaryText},moduleSaved);	
+						$.post("https://dspull.toolforge.org/edit.php",{"site" : siteShort, "title" : siteTitle , "text" : mediawikiText, "summary": summaryText},moduleSaved);	
 					}
 					function moduleSaved (text){
 						console.log(text);
