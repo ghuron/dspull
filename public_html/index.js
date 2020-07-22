@@ -30,7 +30,7 @@ function showModules(){
 		?item wdt:P31 wd:Q63090714.\
 		OPTIONAL { ?itemTarget schema:about ?item; schema:isPartOf <https://' + siteShort + '.wikipedia.org/> }\
 		?source schema:about ?item; schema:isPartOf <https://www.mediawiki.org/>\
-		SERVICE <http://tools.wmflabs.org/mw2sparql/sparql> {\
+		SERVICE <http://mw2sparql.toolforge.org/sparql> {\
 			?source mw:includesPage ?parent\
 		}\
 		OPTIONAL { ?parent schema:about ?base . ?baseTarget schema:about ?base; schema:isPartOf <https://' + siteShort + '.wikipedia.org/> }\
