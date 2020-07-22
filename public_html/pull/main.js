@@ -83,7 +83,7 @@ function getWikidataJson (res) {
 				select ?base ?baseLabel ?baseTarget {\
 				  hint:Query hint:optimizer "None" .\
 				  ?source schema:about wd:' + id + '; schema:isPartOf <https://www.mediawiki.org/>\
-				  SERVICE <http://tools.wmflabs.org/mw2sparql/sparql> {\
+				  SERVICE <http://mw2sparql.toolforge.org/sparql> {\
 				    ?source mw:includesPage ?parent .\
 				  }\
 				  ?parent schema:about ?base\
